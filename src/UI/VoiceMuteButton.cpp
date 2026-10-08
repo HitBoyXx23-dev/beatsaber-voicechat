@@ -17,6 +17,7 @@ namespace VoiceChat::UI {
 void VoiceMuteButton::Show() {
     if (screen) return;
     screen = BSML::FloatingScreen::CreateFloatingScreen({20, 10}, false, {-1.5f, 1.2f, 3.0f}, UnityEngine::Quaternion::get_identity());
+    if (!screen) return;
 
     // BSML::Lite::CreateUIButton(parent, text, anchor, size, onClick). Check this signature
     // against your bsml version; the call is the only place that depends on it.

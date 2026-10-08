@@ -17,6 +17,7 @@ namespace {
 template <class TOut, class... TArgs>
 auto RunStatic(std::string_view namespaze, std::string_view klassName, std::string_view methodName, TArgs&&... args) {
     auto* klass = il2cpp_utils::GetClassFromName(namespaze, klassName);
+    if (!klass) return il2cpp_utils::MethodResult<TOut>(il2cpp_utils::RunMethodException("Class not found", nullptr));
     return il2cpp_utils::RunMethod<TOut>(klass, methodName, std::forward<TArgs>(args)...);
 }
 
@@ -29,36 +30,23 @@ VoiceChatController* VoiceChatController::get_instance() {
     return instance_;
 }
 
-void VoiceChatController::Attach(MultiplayerCore::Networking::MpPacketSerializer* serializer) {
-    if (!serializer || active_) return;
+void VoiceChatController::Arm(MultiplayerCore::Networking::MpPacketSerializer* serializer) {
+    if (!serializer || armed_) return;
 
     serializer_ = serializer;
-    active_ = true;
+    armed_ = true;
     serializer_->RegisterCallback<Packets::VoicePacket*>(
         std::bind(&VoiceChatController::OnVoicePacket, this, std::placeholders::_1, std::placeholders::_2));
-
-    auto go = UnityEngine::GameObject::New_ctor(StringW("VoiceChatSpeaker"));
-    speaker_ = go->AddComponent<UnityEngine::AudioSource*>();
-
-    StartMic();
-    UI::VoiceMuteButton::Show();
-    INFO("Voice chat attached");
+    INFO("Voice chat armed (serializer ready)");
 }
 
-void VoiceChatController::Detach() {
-    if (!active_) return;
-
-    active_ = false;
-    UI::VoiceMuteButton::Hide();
-    StopMic();
+void VoiceChatController::Disarm() {
+    StopRuntime();
+    if (!armed_) return;
 
     if (serializer_) serializer_->UnregisterCallback<Packets::VoicePacket*>();
     serializer_ = nullptr;
-
-    if (speaker_) {
-        UnityEngine::Object::Destroy(speaker_->get_gameObject());
-        speaker_ = nullptr;
-    }
+    armed_ = false;
 
     std::lock_guard lock(mutex_);
     buffers_.clear();
@@ -66,19 +54,69 @@ void VoiceChatController::Detach() {
     sendQueue_.clear();
     playbackQueue_.clear();
     outIndex_ = 0;
-    INFO("Voice chat detached");
+    INFO("Voice chat disarmed");
+}
+
+void VoiceChatController::StartRuntime() {
+    if (!armed_ || runtimeActive_) return;
+
+    runtimeActive_ = true;
+    uiDelayFrames_ = 90;
+    uiShown_ = false;
+    micStarted_ = false;
+    {
+        std::lock_guard lock(mutex_);
+        mic_.SetMuted(true);
+    }
+    EnsureSpeaker();
+    INFO("Voice chat runtime started (lobby)");
+}
+
+void VoiceChatController::StopRuntime() {
+    if (!runtimeActive_) return;
+
+    runtimeActive_ = false;
+    uiDelayFrames_ = 0;
+    uiShown_ = false;
+    UI::VoiceMuteButton::Hide();
+    StopMic();
+    micStarted_ = false;
+
+    if (speaker_) {
+        UnityEngine::Object::Destroy(speaker_->get_gameObject());
+        speaker_ = nullptr;
+    }
+
+    std::lock_guard lock(mutex_);
+    pending_.clear();
+    sendQueue_.clear();
+    playbackQueue_.clear();
+    INFO("Voice chat runtime stopped");
 }
 
 void VoiceChatController::MainThreadTick() {
-    if (!active_) return;
+    if (!runtimeActive_) return;
+    TryShowUi();
     PollMicCapture();
     FlushSendQueue();
     FlushPlaybackQueue();
 }
 
+void VoiceChatController::TryShowUi() {
+    if (uiShown_ || uiDelayFrames_ <= 0) return;
+    uiDelayFrames_--;
+    if (uiDelayFrames_ > 0) return;
+    UI::VoiceMuteButton::Show();
+    uiShown_ = true;
+}
+
 void VoiceChatController::ToggleMute() {
     std::lock_guard lock(mutex_);
     mic_.Toggle();
+    if (!mic_.IsMuted() && !micStarted_) {
+        StartMic();
+        micStarted_ = true;
+    }
     INFO("Mic muted: {}", mic_.IsMuted());
 }
 
@@ -87,7 +125,15 @@ bool VoiceChatController::IsMuted() {
     return mic_.IsMuted();
 }
 
+void VoiceChatController::EnsureSpeaker() {
+    if (speaker_) return;
+    auto go = UnityEngine::GameObject::New_ctor(StringW("VoiceChatSpeaker"));
+    if (!go) return;
+    speaker_ = go->AddComponent<UnityEngine::AudioSource*>();
+}
+
 void VoiceChatController::StartMic() {
+    if (micClip_) return;
     auto micStart = RunStatic<UnityEngine::AudioClip*>(
         "UnityEngine", "Microphone", "Start", StringW(), true, 1, kSampleRate);
     micClip_ = micStart.has_result() ? micStart.get_result() : nullptr;
@@ -99,14 +145,13 @@ void VoiceChatController::StartMic() {
 }
 
 void VoiceChatController::StopMic() {
-    if (micClip_) {
-        RunStatic<void>("UnityEngine", "Microphone", "End", StringW());
-        micClip_ = nullptr;
-    }
+    if (!micClip_) return;
+    RunStatic<void>("UnityEngine", "Microphone", "End", StringW());
+    micClip_ = nullptr;
 }
 
 void VoiceChatController::PollMicCapture() {
-    if (!micClip_ || !active_) return;
+    if (!micClip_ || !runtimeActive_) return;
 
     auto posResult = RunStatic<int>("UnityEngine", "Microphone", "GetPosition", StringW());
     auto clipLenResult = il2cpp_utils::RunMethod<int>(micClip_, "get_samples");
@@ -143,7 +188,7 @@ void VoiceChatController::PollMicCapture() {
 }
 
 void VoiceChatController::FlushSendQueue() {
-    if (!serializer_ || !active_) return;
+    if (!serializer_ || !runtimeActive_) return;
 
     std::deque<std::vector<uint8_t>> local;
     {
@@ -155,7 +200,7 @@ void VoiceChatController::FlushSendQueue() {
 }
 
 void VoiceChatController::SendChunk(const std::vector<uint8_t>& pcm) {
-    if (!serializer_ || !active_ || pcm.empty()) return;
+    if (!serializer_ || !runtimeActive_ || pcm.empty()) return;
 
     auto packet = Packets::VoicePacket::Create();
     if (!packet) return;
@@ -172,7 +217,7 @@ void VoiceChatController::SendChunk(const std::vector<uint8_t>& pcm) {
 }
 
 void VoiceChatController::OnVoicePacket(Packets::VoicePacket* packet, GlobalNamespace::IConnectedPlayer* player) {
-    if (!packet || !player || !active_) return;
+    if (!packet || !player || !armed_) return;
     if (!packet->data) return;
 
     size_t len = static_cast<size_t>(packet->data.size());
@@ -185,6 +230,7 @@ void VoiceChatController::OnVoicePacket(Packets::VoicePacket* packet, GlobalName
         jb.Push(packet->index, std::vector<uint8_t>(packet->data.begin(), packet->data.end()));
         while (auto chunk = jb.Pop()) ready.push_back(std::move(*chunk));
     }
+    if (!runtimeActive_) return;
     {
         std::lock_guard lock(mutex_);
         for (auto& chunk : ready) playbackQueue_.push_back(std::move(chunk));
@@ -192,7 +238,7 @@ void VoiceChatController::OnVoicePacket(Packets::VoicePacket* packet, GlobalName
 }
 
 void VoiceChatController::FlushPlaybackQueue() {
-    if (!speaker_ || !active_) return;
+    if (!speaker_ || !runtimeActive_) return;
 
     std::deque<std::vector<uint8_t>> local;
     {

@@ -24,16 +24,21 @@ public:
 
     static VoiceChatController* get_instance();
 
-    void Attach(MultiplayerCore::Networking::MpPacketSerializer* serializer);
-    void Detach();
+    void Arm(MultiplayerCore::Networking::MpPacketSerializer* serializer);
+    void Disarm();
 
-    bool IsActive() const { return active_; }
+    void StartRuntime();
+    void StopRuntime();
+
+    bool IsArmed() const { return armed_; }
+    bool IsRuntimeActive() const { return runtimeActive_; }
     void MainThreadTick();
 
     void ToggleMute();
     bool IsMuted();
 
 private:
+    void EnsureSpeaker();
     void StartMic();
     void StopMic();
     void PollMicCapture();
@@ -42,10 +47,16 @@ private:
     void PlayPcm(const std::vector<uint8_t>& pcm);
     void FlushSendQueue();
     void FlushPlaybackQueue();
+    void TryShowUi();
 
     static VoiceChatController* instance_;
 
-    std::atomic<bool> active_{false};
+    std::atomic<bool> armed_{false};
+    std::atomic<bool> runtimeActive_{false};
+    int uiDelayFrames_ = 0;
+    bool uiShown_ = false;
+    bool micStarted_ = false;
+
     MultiplayerCore::Networking::MpPacketSerializer* serializer_ = nullptr;
     voicechat::MicState mic_;
     std::mutex mutex_;
