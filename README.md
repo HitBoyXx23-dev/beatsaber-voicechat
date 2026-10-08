@@ -18,6 +18,9 @@ Voice chat for Beat Saber multiplayer lobbies, with a mic mute button.
 | `site/downloads/` | Put the built `.qmod` here |
 | `api/` | Vercel serverless functions |
 | `mod/mod.json` | qmod manifest (game 1.40.8) |
+| `src/` | Mod source (voice core and Quest entry point) |
+| `tests/` | Host tests for the core logic |
+| `build.bat` | Runs tests and builds the mod locally |
 | `scripts/pack-qmod.sh` | Packs a built `.so` into a `.qmod` |
 | `vercel.json` | Vercel config |
 
@@ -29,6 +32,9 @@ Voice chat for Beat Saber multiplayer lobbies, with a mic mute button.
 4. Check `https://<project>.vercel.app/api/health` returns `{"ok": true, ...}`.
 
 ## Build the .qmod
+
+For the full local build, see [BUILD.md](BUILD.md) and run `build.bat` on Windows.
+
 
 A `.qmod` is a zip file with `mod.json` and your compiled native library at the top level.
 
@@ -54,7 +60,7 @@ Steps:
 ## Before you publish
 
 - Check the dependency IDs and versions in `mod/mod.json` against the current QuestPatcher or qpm mod index. They are placeholders.
-- The mod's C++/C# source is not in this repo yet. Without it there is no `.so` to pack, so the download link returns 404 until it's built.
+- The Quest entry point is a stub. Mic capture, lobby packets, and the mute button are not implemented yet (see BUILD.md).
 
 ## Privacy
 

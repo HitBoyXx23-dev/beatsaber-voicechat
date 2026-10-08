@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/QuestPackageManager/QPM.Package/main/qpm.schema.json",
+  "version": "0.1.0",
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "Voice Chat",
+    "id": "voicechat",
+    "version": "0.1.0",
+    "url": "https://github.com/HitBoyXx23-dev/beatsaber-voicechat",
+    "additionalData": {}
+  },
+  "workspace": {
+    "scripts": {},
+    "qmodIncludeDirs": [],
+    "qmodIncludeFiles": [],
+    "qmodOutput": "VoiceChat.qmod"
+  },
+  "dependencies": [
+    { "id": "beatsaber-hook", "versionRange": "^6.0.0", "additionalData": {} },
+    { "id": "scotland2", "versionRange": "^0.1.0", "additionalData": {} }
+  ]
+}
