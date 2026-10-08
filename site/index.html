@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Chat Mod for Beat Saber 1.40.8</title>
+<meta name="description" content="Voice chat for Beat Saber multiplayer lobbies, with a mic mute button. Built for Beat Saber 1.40.8.">
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --text:#e8eaf0; --muted:#9aa3b2; --accent:#3b82f6; --accent2:#22c55e; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f5f6fa; --card:#ffffff; --text:#14171f; --muted:#5b6474; --accent:#2563eb; --accent2:#16a34a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 8px; }
+  h2 { font-size: 1.25rem; margin: 32px 0 12px; }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border-radius: 14px; padding: 20px; margin-top: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .btn { display:inline-block; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; padding:14px 22px; border-radius:10px; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:16px; }
+  ol li, ul li { margin-bottom: 8px; }
+  code { background: rgba(127,127,127,.18); padding: 2px 6px; border-radius: 6px; font-size: .92em; word-break: break-all; }
+  .pill { display:inline-block; font-size:.8rem; padding:2px 10px; border-radius:999px; background:var(--accent2); color:#fff; margin-left:6px; vertical-align:middle; }
+  footer { margin-top:48px; font-size:.85rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Voice Chat for Beat Saber <span class="pill">1.40.8</span></h1>
+  <p class="muted">Talk with other players in multiplayer lobbies. Players talk directly through the game's own multiplayer connection, so there is no server to run or sign up for.</p>
+
+  <div class="row">
+    <a class="btn" href="/downloads/VoiceChat-1.40.8.qmod" download>Download .qmod (1.40.8)</a>
+    <a class="btn secondary" href="#install">How to install</a>
+  </div>
+
+  <h2>Features</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Voice in multiplayer lobbies</strong>, with anyone else who has the mod.</li>
+      <li><strong>Mic mute button</strong> in the lobby. Tap it to mute or unmute yourself. Your state is kept between sessions.</li>
+      <li><strong>No server needed.</strong> Voice is sent as packets over the game's multiplayer connection.</li>
+      <li><strong>Works on any multiplayer server</strong>, as long as the other players have the mod.</li>
+    </ul>
+  </div>
+
+  <h2 id="install">Install</h2>
+  <div class="card">
+    <ol>
+      <li>Install <strong>Beat Saber 1.40.8</strong> and <strong>BSIPA/QuestPatcher</strong> (or your usual modding tool).</li>
+      <li>Install the dependencies the mod needs: <code>beatsaber-hook</code>, <code>bsml</code>, and <code>multiplayercore</code>.</li>
+      <li>Download the <code>.qmod</code> file above and open it with QuestPatcher, or copy it into your mods folder.</li>
+      <li>Start Beat Saber, join a multiplayer lobby, and check the mic button next to your name.</li>
+    </ol>
+  </div>
+
+  <h2>Privacy</h2>
+  <div class="card">
+    <p class="muted">Voice goes directly between players in the lobby and is not encrypted end to end. Only talk with people you trust. Don't rely on this for secure communication.</p>
+  </div>
+
+  <footer>
+    Not affiliated with Beat Saber or Hyperbolic Magnetism. Source: <a href="https://github.com/hitboyxx23-dev/beatsaber-voicechat">github.com/hitboyxx23-dev/beatsaber-voicechat</a>
+  </footer>
+</main>
+</body>
+</html>

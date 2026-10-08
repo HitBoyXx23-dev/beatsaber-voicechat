@@ -1,0 +1,20 @@
+{
+  "_QPVersion": "0.1.1",
+  "id": "voicechat",
+  "name": "Voice Chat",
+  "author": "beatsaber-voicechat",
+  "version": "0.1.0",
+  "packageVersion": "1.40.8",
+  "description": "Proximity-free voice chat for multiplayer lobbies, with a mic mute button. Peers talk directly through the game's multiplayer packets, so no server is needed.",
+  "gameVersion": "1.40.8",
+  "dependencies": [
+    { "id": "beatsaber-hook", "version": "^6.0.0", "downloadIfMissing": "" },
+    { "id": "bsml", "version": "^0.4.0", "downloadIfMissing": "" },
+    { "id": "multiplayercore", "version": "^1.0.0", "downloadIfMissing": "" }
+  ],
+  "modFiles": ["libvoicechat.so"],
+  "libraryFiles": [],
+  "fileCopies": [],
+  "copyExtensions": [],
+  "coverImage": ""
+}
