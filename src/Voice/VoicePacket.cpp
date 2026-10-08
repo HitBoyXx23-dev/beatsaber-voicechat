@@ -14,12 +14,13 @@ void VoiceChat::Packets::VoicePacket::Serialize(LiteNetLib::Utils::NetDataWriter
 void VoiceChat::Packets::VoicePacket::Deserialize(LiteNetLib::Utils::NetDataReader* reader) {
     index = reader->GetInt();
     int length = reader->GetInt();
+    constexpr int kMaxVoiceBytes = 640;
+    if (length <= 0 || length > kMaxVoiceBytes) {
+        data = nullptr;
+        return;
+    }
     auto bytes = ArrayW<uint8_t>(length);
     for (int i = 0; i < length; i++) bytes[i] = reader->GetByte();
     data = bytes;
 }
 
-void VoiceChat::Packets::VoicePacket::ctor() {
-    INVOKE_CTOR();
-    index = 0;
-}

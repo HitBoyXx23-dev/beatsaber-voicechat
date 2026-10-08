@@ -4,17 +4,23 @@
 #include "UI/VoiceMuteButton.hpp"
 
 #include <algorithm>
-#include <chrono>
+#include <string_view>
 
 #include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 #include "UnityEngine/GameObject.hpp"
-
-// il2cpp exports used to let a plain std::thread call into managed code.
-extern "C" void* il2cpp_domain_get();
-extern "C" void* il2cpp_thread_attach(void* domain);
-extern "C" void il2cpp_thread_detach(void* thread);
+#include "UnityEngine/Object.hpp"
 
 namespace VoiceChat {
+
+namespace {
+
+template <class TOut, class... TArgs>
+auto RunStatic(std::string_view namespaze, std::string_view klassName, std::string_view methodName, TArgs&&... args) {
+    auto* klass = il2cpp_utils::GetClassFromName(namespaze, klassName);
+    return il2cpp_utils::RunMethod<TOut>(klass, methodName, std::forward<TArgs>(args)...);
+}
+
+}  // namespace
 
 VoiceChatController* VoiceChatController::instance_ = nullptr;
 
@@ -24,12 +30,13 @@ VoiceChatController* VoiceChatController::get_instance() {
 }
 
 void VoiceChatController::Attach(MultiplayerCore::Networking::MpPacketSerializer* serializer) {
-    if (!serializer) return;
+    if (!serializer || active_) return;
+
     serializer_ = serializer;
+    active_ = true;
     serializer_->RegisterCallback<Packets::VoicePacket*>(
         std::bind(&VoiceChatController::OnVoicePacket, this, std::placeholders::_1, std::placeholders::_2));
 
-    // Speaker object, created on the main thread.
     auto go = UnityEngine::GameObject::New_ctor(StringW("VoiceChatSpeaker"));
     speaker_ = go->AddComponent<UnityEngine::AudioSource*>();
 
@@ -39,14 +46,34 @@ void VoiceChatController::Attach(MultiplayerCore::Networking::MpPacketSerializer
 }
 
 void VoiceChatController::Detach() {
+    if (!active_) return;
+
+    active_ = false;
     UI::VoiceMuteButton::Hide();
     StopMic();
+
     if (serializer_) serializer_->UnregisterCallback<Packets::VoicePacket*>();
     serializer_ = nullptr;
+
+    if (speaker_) {
+        UnityEngine::Object::Destroy(speaker_->get_gameObject());
+        speaker_ = nullptr;
+    }
+
     std::lock_guard lock(mutex_);
     buffers_.clear();
     pending_.clear();
+    sendQueue_.clear();
+    playbackQueue_.clear();
+    outIndex_ = 0;
     INFO("Voice chat detached");
+}
+
+void VoiceChatController::MainThreadTick() {
+    if (!active_) return;
+    PollMicCapture();
+    FlushSendQueue();
+    FlushPlaybackQueue();
 }
 
 void VoiceChatController::ToggleMute() {
@@ -61,83 +88,95 @@ bool VoiceChatController::IsMuted() {
 }
 
 void VoiceChatController::StartMic() {
-    // Microphone.Start(deviceName=null, loop=true, lengthSec=1, frequency)
-    micClip_ = il2cpp_utils::RunMethod<UnityEngine::AudioClip*>(
-        "UnityEngine", "Microphone", "Start", StringW(), true, 1, kSampleRate).value_or(nullptr);
+    auto micStart = RunStatic<UnityEngine::AudioClip*>(
+        "UnityEngine", "Microphone", "Start", StringW(), true, 1, kSampleRate);
+    micClip_ = micStart.has_result() ? micStart.get_result() : nullptr;
     if (!micClip_) {
-        ERROR("No microphone available");
+        WARNING("No microphone available; voice capture disabled");
         return;
     }
     micReadPos_ = 0;
-    running_ = true;
-    captureThread_ = std::thread(&VoiceChatController::CaptureLoop, this);
 }
 
 void VoiceChatController::StopMic() {
-    running_ = false;
-    if (captureThread_.joinable()) captureThread_.join();
     if (micClip_) {
-        il2cpp_utils::RunMethod("UnityEngine", "Microphone", "End", StringW());
+        RunStatic<void>("UnityEngine", "Microphone", "End", StringW());
         micClip_ = nullptr;
     }
 }
 
-// Runs on its own thread. Reads new samples from the looping mic clip, converts
-// them to 16-bit PCM, and sends them in fixed-size chunks.
-void VoiceChatController::CaptureLoop() {
-    void* thread = il2cpp_thread_attach(il2cpp_domain_get());
-    while (running_) {
-        auto pos = il2cpp_utils::RunMethod<int>("UnityEngine", "Microphone", "GetPosition", StringW());
-        int clipLen = il2cpp_utils::RunMethod<int>(micClip_, "get_samples").value_or(0);
-        if (!pos || clipLen <= 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            continue;
+void VoiceChatController::PollMicCapture() {
+    if (!micClip_ || !active_) return;
+
+    auto posResult = RunStatic<int>("UnityEngine", "Microphone", "GetPosition", StringW());
+    auto clipLenResult = il2cpp_utils::RunMethod<int>(micClip_, "get_samples");
+    if (!posResult.has_result() || !clipLenResult.has_result()) return;
+
+    int pos = posResult.get_result();
+    int clipLen = clipLenResult.get_result();
+    if (clipLen <= 0) return;
+
+    int available = (pos - micReadPos_ + clipLen) % clipLen;
+    if (available < kChunkSamples) return;
+
+    ArrayW<float> floats(available);
+    il2cpp_utils::RunMethod(micClip_, "GetData", floats, micReadPos_);
+    micReadPos_ = (micReadPos_ + available) % clipLen;
+
+    {
+        std::lock_guard lock(mutex_);
+        if (!mic_.ShouldTransmit()) {
+            pending_.clear();
+            return;
         }
-
-        int available = (*pos - micReadPos_ + clipLen) % clipLen;
-        if (available >= kChunkSamples) {
-            ArrayW<float> floats(available);
-            il2cpp_utils::RunMethod(micClip_, "GetData", floats, micReadPos_);
-            micReadPos_ = (micReadPos_ + available) % clipLen;
-
-            std::lock_guard lock(mutex_);
-            if (mic_.ShouldTransmit()) {
-                for (int i = 0; i < available; i++) {
-                    float s = std::clamp(floats[i], -1.0f, 1.0f);
-                    auto v = static_cast<int16_t>(s * 32767.0f);
-                    pending_.push_back(static_cast<uint8_t>(v & 0xFF));
-                    pending_.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
-                }
-                while (pending_.size() >= static_cast<size_t>(kChunkSamples) * 2) {
-                    std::vector<uint8_t> chunk(pending_.begin(), pending_.begin() + kChunkSamples * 2);
-                    pending_.erase(pending_.begin(), pending_.begin() + kChunkSamples * 2);
-                    SendChunk(chunk);
-                }
-            } else {
-                pending_.clear();  // muted: drop audio, do not send
-            }
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        for (int i = 0; i < available; i++) {
+            float s = std::clamp(floats[i], -1.0f, 1.0f);
+            auto v = static_cast<int16_t>(s * 32767.0f);
+            pending_.push_back(static_cast<uint8_t>(v & 0xFF));
+            pending_.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+        }
+        while (pending_.size() >= kMaxPcmBytesPerPacket) {
+            sendQueue_.emplace_back(pending_.begin(), pending_.begin() + kMaxPcmBytesPerPacket);
+            pending_.erase(pending_.begin(), pending_.begin() + kMaxPcmBytesPerPacket);
         }
     }
-    il2cpp_thread_detach(thread);
 }
 
-// Caller must hold mutex_.
+void VoiceChatController::FlushSendQueue() {
+    if (!serializer_ || !active_) return;
+
+    std::deque<std::vector<uint8_t>> local;
+    {
+        std::lock_guard lock(mutex_);
+        local.swap(sendQueue_);
+    }
+
+    for (auto& pcm : local) SendChunk(pcm);
+}
+
 void VoiceChatController::SendChunk(const std::vector<uint8_t>& pcm) {
-    if (!serializer_) return;
-    auto packet = MultiplayerCore::Networking::MpPacketSerializer::ObtainPacket<Packets::VoicePacket*>();
+    if (!serializer_ || !active_ || pcm.empty()) return;
+
+    auto packet = Packets::VoicePacket::Create();
     if (!packet) return;
 
     ArrayW<uint8_t> data(pcm.size());
     for (size_t i = 0; i < pcm.size(); i++) data[i] = pcm[i];
-    packet->index = outIndex_++;
+
+    {
+        std::lock_guard lock(mutex_);
+        packet->index = outIndex_++;
+    }
     packet->data = data;
     serializer_->SendUnreliable(packet);
 }
 
 void VoiceChatController::OnVoicePacket(Packets::VoicePacket* packet, GlobalNamespace::IConnectedPlayer* player) {
-    if (!packet || !player) return;
+    if (!packet || !player || !active_) return;
+    if (!packet->data) return;
+
+    size_t len = static_cast<size_t>(packet->data.size());
+    if (len == 0 || len > kMaxPcmBytesPerPacket) return;
 
     std::vector<std::vector<uint8_t>> ready;
     {
@@ -146,10 +185,23 @@ void VoiceChatController::OnVoicePacket(Packets::VoicePacket* packet, GlobalName
         jb.Push(packet->index, std::vector<uint8_t>(packet->data.begin(), packet->data.end()));
         while (auto chunk = jb.Pop()) ready.push_back(std::move(*chunk));
     }
-    for (auto& chunk : ready) PlayPcm(chunk);
+    {
+        std::lock_guard lock(mutex_);
+        for (auto& chunk : ready) playbackQueue_.push_back(std::move(chunk));
+    }
 }
 
-// Plays one chunk of 16-bit PCM through the speaker on the main thread's AudioSource.
+void VoiceChatController::FlushPlaybackQueue() {
+    if (!speaker_ || !active_) return;
+
+    std::deque<std::vector<uint8_t>> local;
+    {
+        std::lock_guard lock(mutex_);
+        local.swap(playbackQueue_);
+    }
+    for (auto& chunk : local) PlayPcm(chunk);
+}
+
 void VoiceChatController::PlayPcm(const std::vector<uint8_t>& pcm) {
     if (!speaker_ || pcm.size() < 2) return;
     int samples = static_cast<int>(pcm.size() / 2);
@@ -158,8 +210,9 @@ void VoiceChatController::PlayPcm(const std::vector<uint8_t>& pcm) {
         auto v = static_cast<int16_t>(pcm[i * 2] | (pcm[i * 2 + 1] << 8));
         floats[i] = v / 32768.0f;
     }
-    auto clip = il2cpp_utils::RunMethod<UnityEngine::AudioClip*>(
-        "UnityEngine", "AudioClip", "Create", StringW("voice"), samples, 1, kSampleRate, false).value_or(nullptr);
+    auto clipResult = RunStatic<UnityEngine::AudioClip*>(
+        "UnityEngine", "AudioClip", "Create", StringW("voice"), samples, 1, kSampleRate, false);
+    auto clip = clipResult.has_result() ? clipResult.get_result() : nullptr;
     if (!clip) return;
     il2cpp_utils::RunMethod(clip, "SetData", floats, 0);
     il2cpp_utils::RunMethod(speaker_, "PlayOneShot", clip);

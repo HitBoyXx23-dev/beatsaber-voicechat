@@ -1,13 +1,12 @@
-// Sends the local mic audio to other lobby players and plays theirs back.
-// Ties together MicState (mute), voice_core (encoding) and JitterBuffer (ordering).
 #pragma once
 
 #include <atomic>
+#include <deque>
 #include <map>
 #include <mutex>
-#include <thread>
 #include <vector>
 
+#include "Voice/VoicePacket.hpp"
 #include "multiplayer-core/shared/Networking/MpPacketSerializer.hpp"
 #include "GlobalNamespace/IConnectedPlayer.hpp"
 #include "UnityEngine/AudioSource.hpp"
@@ -20,13 +19,16 @@ namespace VoiceChat {
 class VoiceChatController {
 public:
     static constexpr int kSampleRate = 16000;
-    static constexpr int kChunkSamples = 320;  // 20 ms at 16 kHz
+    static constexpr int kChunkSamples = 320;
+    static constexpr size_t kMaxPcmBytesPerPacket = kChunkSamples * 2;
 
     static VoiceChatController* get_instance();
 
-    // Called from the lobby hook (main thread) with the injected serializer.
     void Attach(MultiplayerCore::Networking::MpPacketSerializer* serializer);
     void Detach();
+
+    bool IsActive() const { return active_; }
+    void MainThreadTick();
 
     void ToggleMute();
     bool IsMuted();
@@ -34,22 +36,25 @@ public:
 private:
     void StartMic();
     void StopMic();
-    void CaptureLoop();
+    void PollMicCapture();
     void SendChunk(const std::vector<uint8_t>& pcm);
     void OnVoicePacket(Packets::VoicePacket* packet, GlobalNamespace::IConnectedPlayer* player);
     void PlayPcm(const std::vector<uint8_t>& pcm);
+    void FlushSendQueue();
+    void FlushPlaybackQueue();
 
     static VoiceChatController* instance_;
 
+    std::atomic<bool> active_{false};
     MultiplayerCore::Networking::MpPacketSerializer* serializer_ = nullptr;
     voicechat::MicState mic_;
-    std::mutex mutex_;  // guards mic_, buffers_, outIndex_, pending_
+    std::mutex mutex_;
     int outIndex_ = 0;
-    std::vector<uint8_t> pending_;  // PCM waiting to fill a whole chunk
+    std::vector<uint8_t> pending_;
     std::map<GlobalNamespace::IConnectedPlayer*, voicechat::JitterBuffer> buffers_;
+    std::deque<std::vector<uint8_t>> sendQueue_;
+    std::deque<std::vector<uint8_t>> playbackQueue_;
 
-    std::atomic<bool> running_{false};
-    std::thread captureThread_;
     UnityEngine::AudioClip* micClip_ = nullptr;
     int micReadPos_ = 0;
     UnityEngine::AudioSource* speaker_ = nullptr;
