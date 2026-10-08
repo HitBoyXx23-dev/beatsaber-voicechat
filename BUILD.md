@@ -2,12 +2,22 @@
 
 ## Windows (build.bat)
 
-1. Install **CMake** (https://cmake.org/download/) and a C++ compiler (Visual Studio "Desktop development with C++" or MinGW). Make sure `cmake` is on PATH.
-2. Double-click `build.bat`, or run it from a terminal in the repo folder.
-   - It always builds and runs the host tests (`src/voice_core` logic).
-   - To also build the Quest library and `.qmod`, install the **Android NDK** and set `ANDROID_NDK_HOME` to its folder, for example `C:\Android\ndk\26.1.10909125`. Then run `build.bat` again.
-3. The Quest build also needs **Ninja** on PATH and **bash** (Git Bash works) for `scripts/pack-qmod.sh`.
-4. The `.qmod` is written to `site/downloads/VoiceChat-1.40.8.qmod`.
+Just double-click `build.bat` or run it from a terminal in the repo folder. It downloads what's missing into `tools\` (git-ignored):
+
+| Requirement | Used for | How it's obtained |
+| --- | --- | --- |
+| CMake 3.30.5 | Build system | Downloaded if not on PATH |
+| Ninja 1.12.1 | Quest build | Downloaded if not on PATH |
+| qpm | Mod dependencies | Downloaded from the QPM.CLI latest release if not on PATH |
+| Android NDK r26b (~1 GB) | Quest C++ compiler | Downloaded if `ANDROID_NDK_HOME` is not set |
+
+Then it runs the host tests, `qpm restore`, the Quest build, and packs `site\downloads\VoiceChat-1.40.8.qmod`.
+
+Notes:
+- Downloads need internet access. The NDK download is large, so the first run takes a while.
+- You need a C++ compiler on PATH for the host tests (Visual Studio "Desktop development with C++", or MinGW).
+- If the qpm download fails, install qpm manually from the QPM.CLI releases page and rerun.
+- To use your own NDK, set `ANDROID_NDK_HOME` before running.
 
 ## Linux / macOS
 
