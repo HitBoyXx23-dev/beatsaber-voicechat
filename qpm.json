@@ -16,8 +16,5 @@
     "qmodIncludeFiles": [],
     "qmodOutput": "VoiceChat.qmod"
   },
-  "dependencies": [
-    { "id": "beatsaber-hook", "versionRange": "^6.0.0", "additionalData": {} },
-    { "id": "scotland2", "versionRange": "^0.1.0", "additionalData": {} }
-  ]
+  "dependencies": []
 }
