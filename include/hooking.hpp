@@ -22,6 +22,9 @@ namespace VoiceChat {
         static inline void InstallHooks() {
             for (auto& func : installFuncs) func();
         }
+
+        static void InstallBootstrapHook();
+        static void EnsureGameplayReady();
     };
 
     template<auto mPtr>

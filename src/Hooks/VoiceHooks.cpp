@@ -6,16 +6,26 @@
 #include "multiplayer-core/shared/Networking/MpPacketSerializer.hpp"
 #include "GlobalNamespace/MultiplayerSessionManager.hpp"
 #include "GlobalNamespace/GameServerLobbyFlowCoordinator.hpp"
+#include "GlobalNamespace/MainMenuViewController.hpp"
+#include "custom-types/shared/register.hpp"
 
-#define VOICECHAT_INSTALL_HOOK(name_)                                                                         \
+#define VOICECHAT_QUEUE_HOOK(name_)                                                                           \
     struct Auto_Hook_##name_ {                                                                                \
         static void Install() {                                                                               \
             static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID "_Install_" #name_);               \
             ::Hooking::InstallHook<Hook_##name_>(logger);                                                     \
         }                                                                                                     \
-        Auto_Hook_##name_() { VoiceChat::Hooking::AddInstallFunc(Install); }                                  \
+        Auto_Hook_##name_() { ::VoiceChat::Hooking::AddInstallFunc(Install); }                                \
     };                                                                                                        \
     static Auto_Hook_##name_ Auto_Hook_Instance_##name_
+
+MAKE_HOOK_CHECKED_FIND_CLASS(VoiceChat_MainMenu_DidActivate,
+    &GlobalNamespace::MainMenuViewController::DidActivate, "GlobalNamespace", "MainMenuViewController", "DidActivate",
+    void, GlobalNamespace::MainMenuViewController* self, bool firstActivation, bool addedToHierarchy,
+    bool screenSystemEnabling) {
+    VoiceChat_MainMenu_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
+    VoiceChat::Hooking::EnsureGameplayReady();
+}
 
 MAKE_HOOK_CHECKED_FIND_CLASS(VoiceChat_PacketSerializer_Initialize,
     &MultiplayerCore::Networking::MpPacketSerializer::Initialize,
@@ -60,8 +70,26 @@ MAKE_HOOK_CHECKED_FIND_CLASS(VoiceChat_Lobby_DidDeactivate,
     VoiceChat_Lobby_DidDeactivate(self, removedFromHierarchy, screenSystemDisabling);
 }
 
-VOICECHAT_INSTALL_HOOK(VoiceChat_PacketSerializer_Initialize);
-VOICECHAT_INSTALL_HOOK(VoiceChat_PacketSerializer_Dispose);
-VOICECHAT_INSTALL_HOOK(VoiceChat_SessionManager_LateUpdate);
-VOICECHAT_INSTALL_HOOK(VoiceChat_Lobby_DidActivate);
-VOICECHAT_INSTALL_HOOK(VoiceChat_Lobby_DidDeactivate);
+VOICECHAT_QUEUE_HOOK(VoiceChat_PacketSerializer_Initialize);
+VOICECHAT_QUEUE_HOOK(VoiceChat_PacketSerializer_Dispose);
+VOICECHAT_QUEUE_HOOK(VoiceChat_SessionManager_LateUpdate);
+VOICECHAT_QUEUE_HOOK(VoiceChat_Lobby_DidActivate);
+VOICECHAT_QUEUE_HOOK(VoiceChat_Lobby_DidDeactivate);
+
+void VoiceChat::Hooking::InstallBootstrapHook() {
+    static bool installed = false;
+    if (installed) return;
+    installed = true;
+    static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID "_Install_Bootstrap");
+    ::Hooking::InstallHook<Hook_VoiceChat_MainMenu_DidActivate>(logger);
+    INFO("Voice chat bootstrap hook installed");
+}
+
+void VoiceChat::Hooking::EnsureGameplayReady() {
+    static bool ready = false;
+    if (ready) return;
+    ready = true;
+    custom_types::Register::AutoRegister();
+    InstallHooks();
+    INFO("Voice chat gameplay hooks installed");
+}
