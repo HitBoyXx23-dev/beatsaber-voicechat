@@ -20,8 +20,6 @@ Voice chat for Beat Saber multiplayer lobbies, with a mic mute button.
 | `mod/mod.json` | qmod manifest (game 1.40.8) |
 | `src/` | Mod source (voice core and Quest entry point) |
 | `tests/` | Host tests for the core logic |
-| `build.bat` | Runs tests and builds the mod locally |
-| `scripts/pack-qmod.sh` | Packs a built `.so` into a `.qmod` |
 | `vercel.json` | Vercel config |
 
 ## Deploy to Vercel
@@ -33,34 +31,12 @@ Voice chat for Beat Saber multiplayer lobbies, with a mic mute button.
 
 ## Build the .qmod
 
-For the full local build, see [BUILD.md](BUILD.md) and run `build.bat` on Windows.
-
-
-A `.qmod` is a zip file with `mod.json` and your compiled native library at the top level.
-
-You need:
-- The Quest modding toolchain for Beat Saber 1.40.8: Android NDK, CMake, and the `qpm` package manager (or the template your mod was made from).
-- The mod's compiled library, for example `libvoicechat.so`.
-
-Steps:
-
-1. Build the library for `arm64-v8a` with your toolchain. The output is `libvoicechat.so`.
-2. From the repo root, run:
-   ```bash
-   scripts/pack-qmod.sh path/to/libvoicechat.so
-   ```
-   This writes `site/downloads/VoiceChat-1.40.8.qmod`.
-3. Check the archive:
-   ```bash
-   unzip -l site/downloads/VoiceChat-1.40.8.qmod
-   ```
-   It should list `mod.json` and `libvoicechat.so`.
-4. Commit and push the `.qmod` so Vercel redeploys with it.
+A `.qmod` is a zip containing `mod.json` and the compiled `libvoicechat.so`, placed in `site/downloads/`. The build is handled separately.
 
 ## Before you publish
 
 - Check the dependency IDs and versions in `mod/mod.json` against the current QuestPatcher or qpm mod index. They are placeholders.
-- The Quest entry point is a stub. Mic capture, lobby packets, and the mute button are not implemented yet (see BUILD.md).
+- The Quest entry point is a stub. Mic capture, lobby packets, and the mute button are not implemented yet .
 
 ## Privacy
 
