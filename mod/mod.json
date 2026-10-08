@@ -4,7 +4,7 @@
   "name": "Voice Chat",
   "author": "beatsaber-voicechat",
   "version": "0.1.0",
-  "packageVersion": "1.40.8",
+  "packageVersion": "1.40.8_7379",
   "description": "Proximity-free voice chat for multiplayer lobbies, with a mic mute button. Peers talk directly through the game's multiplayer packets, so no server is needed.",
   "gameVersion": "1.40.8",
   "dependencies": [],
