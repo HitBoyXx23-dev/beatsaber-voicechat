@@ -1,5 +1,6 @@
-// Quest entry point. The game-facing hooks (mic capture, lobby packets, mute button UI)
-// are not implemented yet. This file only wires up the mod lifecycle and config.
+// Quest entry point. Lobby wiring (creating a VoiceChatController and calling Attach
+// with the injected MpPacketSerializer) is a TODO, since it needs a Zenject installer
+// or MultiplayerCore hook.
 #include "voice_core.hpp"
 
 namespace {
@@ -7,12 +8,9 @@ voicechat::MicState gMic;
 }
 
 // Standard mod-loader exports. The names and signatures follow the scotland2 / qpm template.
-extern "C" __attribute__((visibility("default"))) void setup(void* /*modInfo*/) {
-    // Logging and config setup goes here once the modloader headers are available.
-}
+extern "C" __attribute__((visibility("default"))) void setup(void* /*modInfo*/) {}
 
 extern "C" __attribute__((visibility("default"))) void load() {
-    // TODO: install Beat Saber hooks (lobby join, mic button) with beatsaber-hook.
-    // gMic holds mute state until those hooks are added.
+    // TODO: install the lobby hook that creates VoiceChatController and calls Attach().
     (void)gMic;
 }

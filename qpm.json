@@ -16,5 +16,31 @@
     "qmodIncludeFiles": [],
     "qmodOutput": "VoiceChat.qmod"
   },
-  "dependencies": []
+  "dependencies": [
+    {
+      "id": "beatsaber-hook",
+      "versionRange": "^6.4.2",
+      "additionalData": {}
+    },
+    {
+      "id": "bs-cordl",
+      "versionRange": "4008.*",
+      "additionalData": {}
+    },
+    {
+      "id": "multiplayer-core",
+      "versionRange": "^1.6.7",
+      "additionalData": {}
+    },
+    {
+      "id": "custom-types",
+      "versionRange": "^0.18.3",
+      "additionalData": {}
+    },
+    {
+      "id": "scotland2",
+      "versionRange": "^0.1.6",
+      "additionalData": {}
+    }
+  ]
 }
