@@ -4,6 +4,8 @@
 
 #include "bsml/shared/BSML.hpp"
 #include "UnityEngine/Quaternion.hpp"
+#include "UnityEngine/Object.hpp"
+#include "UnityEngine/UI/Button.hpp"
 
 namespace {
 BSML::FloatingScreen* screen = nullptr;

@@ -1,6 +1,10 @@
 #include "Voice/VoiceChatController.hpp"
 #include "Voice/VoicePacket.hpp"
 #include "logging.hpp"
+#include "UI/VoiceMuteButton.hpp"
+
+#include <algorithm>
+#include <chrono>
 
 #include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 #include "UnityEngine/GameObject.hpp"
@@ -30,10 +34,12 @@ void VoiceChatController::Attach(MultiplayerCore::Networking::MpPacketSerializer
     speaker_ = go->AddComponent<UnityEngine::AudioSource*>();
 
     StartMic();
+    UI::VoiceMuteButton::Show();
     INFO("Voice chat attached");
 }
 
 void VoiceChatController::Detach() {
+    UI::VoiceMuteButton::Hide();
     StopMic();
     if (serializer_) serializer_->UnregisterCallback<Packets::VoicePacket*>();
     serializer_ = nullptr;
