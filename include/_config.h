@@ -9,4 +9,4 @@
 #ifndef VERSION_LONG
 #define VERSION_LONG 0
 #endif
-#define BEATTOGETHER_EXPORT_FUNC extern "C" __attribute__((visibility("default")))
+#define VOICECHAT_EXPORT_FUNC extern "C" __attribute__((visibility("default")))

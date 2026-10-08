@@ -1,42 +1,47 @@
-# Beat Saber Voice Chat (1.40.8)
+# Beat Saber Voice Chat (Quest, 1.40.8)
 
-Voice chat for Beat Saber multiplayer lobbies, with a mic mute button.
+Voice chat for Beat Saber multiplayer lobbies on standalone Quest, with a mic mute button.
+Players talk directly through the game's multiplayer packets (via MultiplayerCore), so no voice server is needed.
 
-## How it works
+## Build the mod
 
-- **Voice does not go through a server.** Audio is sent as packets between players in the same lobby, over the game's own multiplayer connection. Anyone in the lobby who has the mod can hear and talk.
-- **The Vercel project only serves the download page and small JSON endpoints:**
-  - `GET /api/version`: the latest mod and game version, and the qmod path.
-  - `GET /api/health`: a status check.
-  These endpoints are stateless, so they work on Vercel's serverless functions without a database.
+Requirements: [qpm](https://github.com/QuestPackageManager/QPM.CLI), CMake, Ninja, and the Android NDK (qpm installs the version listed in `qpm.json`).
 
-## Repository layout
+```bash
+qpm restore          # downloads beatsaber-hook, bs-cordl, multiplayer-core, bsml, ...
+qpm s build          # builds build/libvoicechat.so
+qpm qmod zip         # packs VoiceChat.qmod from mod.template.json
+```
+
+Install the `.qmod` with [MBF](https://mbf.bsquest.xyz), then also install MultiplayerCore from the same page.
+
+## Host tests (no Quest toolchain)
+
+The packet format, mute state, and jitter buffer are plain C++ and tested on PC:
+
+```bash
+cmake -S . -B build/host && cmake --build build/host && ctest --test-dir build/host
+```
+
+## Layout
 
 | Path | What it is |
 | --- | --- |
-| `site/index.html` | Download page |
-| `site/downloads/` | Put the built `.qmod` here |
-| `api/` | Vercel serverless functions |
-| `mod/mod.json` | qmod manifest (game 1.40.8) |
-| `src/` | Mod source (voice core and Quest entry point) |
-| `tests/` | Host tests for the core logic |
-| `vercel.json` | Vercel config |
+| `src/voice_core.*`, `src/jitter_buffer.*` | Platform-independent logic (tested) |
+| `src/Voice/` | Voice packet and the controller (mic capture, send, receive, playback) |
+| `src/Hooks/VoiceHooks.cpp` | Attaches the controller when a lobby session starts |
+| `src/UI/VoiceMuteButton.*` | In-lobby mute button |
+| `include/hooking.hpp` | Auto-install hook macros |
+| `mod.template.json`, `qpm.json` | qmod manifest template and dependencies |
+| `site/`, `api/`, `vercel.json` | Download page and version API for Vercel |
 
-## Deploy to Vercel
+## Deploy the site (Vercel)
 
-1. Go to vercel.com, click **Add New → Project**, and import this repo.
-2. Leave the build command empty. Vercel reads `vercel.json`, serves `site/`, and deploys `api/`.
-3. Click **Deploy**. The site is then at `https://<project>.vercel.app`.
-4. Check `https://<project>.vercel.app/api/health` returns `{"ok": true, ...}`.
+Import the repo in Vercel with no build command. Put the built `.qmod` in `site/downloads/VoiceChat-1.40.8.qmod` (the download link points there) and commit it. `GET /api/version` and `GET /api/health` are stateless.
 
-## Build the .qmod
+## Status
 
-A `.qmod` is a zip containing `mod.json` and the compiled `libvoicechat.so`, placed in `site/downloads/`. The build is handled separately.
-
-## Before you publish
-
-- Check the dependency IDs and versions in `mod/mod.json` against the current QuestPatcher or qpm mod index. They are placeholders.
-- The Quest entry point is a stub. Mic capture, lobby packets, and the mute button are not implemented yet .
+Not yet verified on a headset. Known risks: Unity audio calls from the capture thread, per-chunk playback quality, and a few API signatures (`BSML::Lite::CreateUIButton`, `NetDataWriter::Put`) that depend on the exact dependency versions.
 
 ## Privacy
 

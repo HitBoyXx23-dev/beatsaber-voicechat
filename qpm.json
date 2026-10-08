@@ -8,11 +8,26 @@
     "id": "voicechat",
     "version": "0.1.0",
     "url": "https://github.com/HitBoyXx23-dev/beatsaber-voicechat",
-    "additionalData": {}
+    "additionalData": {
+      "overrideSoName": "libvoicechat.so",
+      "cmake": true
+    }
   },
   "workspace": {
-    "scripts": {},
-    "qmodIncludeDirs": [],
+    "scripts": {
+      "build": [
+        "cmake -G \"Ninja\" -DCMAKE_BUILD_TYPE=\"RelWithDebInfo\" -B build",
+        "cmake --build ./build"
+      ],
+      "clean": [
+        "cmake --build ./build --target clean"
+      ]
+    },
+    "ndk": "^27.2.12479018",
+    "qmodIncludeDirs": [
+      "./build",
+      "./extern/libs"
+    ],
     "qmodIncludeFiles": [],
     "qmodOutput": "VoiceChat.qmod"
   },
@@ -38,9 +53,24 @@
       "additionalData": {}
     },
     {
+      "id": "bsml",
+      "versionRange": "^0.4.55",
+      "additionalData": {}
+    },
+    {
       "id": "scotland2",
       "versionRange": "^0.1.6",
-      "additionalData": {}
+      "additionalData": {
+        "includeQmod": false,
+        "private": true
+      }
+    },
+    {
+      "id": "paper2_scotland2",
+      "versionRange": "^4.6.4",
+      "additionalData": {
+        "private": true
+      }
     }
   ]
 }
