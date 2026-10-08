@@ -1,16 +1,20 @@
-// Quest entry point. Lobby wiring (creating a VoiceChatController and calling Attach
-// with the injected MpPacketSerializer) is a TODO, since it needs a Zenject installer
-// or MultiplayerCore hook.
-#include "voice_core.hpp"
+// Quest entry point. Lobby hooks and the mute button are set up here.
+#include "_config.h"
+#include "logging.hpp"
+#include "UI/VoiceMuteButton.hpp"
+#include "scotland2/shared/loader.hpp"
 
-namespace {
-voicechat::MicState gMic;
+modloader::ModInfo modInfo{MOD_ID, VERSION, VERSION_LONG};
+
+BEATTOGETHER_EXPORT_FUNC void setup(CModInfo* info) {
+    info->id = MOD_ID;
+    info->version = VERSION;
+    info->version_long = VERSION_LONG;
 }
 
-// Standard mod-loader exports. The names and signatures follow the scotland2 / qpm template.
-extern "C" __attribute__((visibility("default"))) void setup(void* /*modInfo*/) {}
-
-extern "C" __attribute__((visibility("default"))) void load() {
-    // TODO: install the lobby hook that creates VoiceChatController and calls Attach().
-    (void)gMic;
+BEATTOGETHER_EXPORT_FUNC void late_load() {
+    il2cpp_functions::Init();
+    INFO("VoiceChat loaded");
+    // Hooks in src/Hooks install themselves. The mute button is shown when the lobby
+    // controller attaches, so it is not created here.
 }
