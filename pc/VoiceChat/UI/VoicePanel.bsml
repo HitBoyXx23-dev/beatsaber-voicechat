@@ -1,0 +1,6 @@
+<vertical bg="round-rect-panel" pad="2" spacing="1" child-align="MiddleCenter" pref-width="44" pref-height="26">
+  <text text="Voice Chat" font-size="4" align="Center" bold="true" />
+  <text text="~StatusText" font-color="~StatusColor" font-size="7" align="Center" bold="true" />
+  <text text="~HintText" font-size="3" align="Center" italics="true" font-color="#CCCCCC" />
+  <action-button text="~ButtonText" on-click="ToggleMute" active="~ShowButton" pref-width="34" pref-height="9" />
+</vertical>

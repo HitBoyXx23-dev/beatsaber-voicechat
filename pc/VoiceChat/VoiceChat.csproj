@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>VoiceChat</AssemblyName>
+    <RootNamespace>VoiceChat</RootNamespace>
+    <Version>1.0.0</Version>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <BeatSaberDir Condition="'$(BeatSaberDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Beat Saber</BeatSaberDir>
+    <ManagedDir>$(BeatSaberDir)\Beat Saber_Data\Managed</ManagedDir>
+    <CopyToPlugins Condition="'$(CopyToPlugins)' == ''">false</CopyToPlugins>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="manifest.json" />
+    <EmbeddedResource Include="UI\*.bsml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(ManagedDir)\*.dll"
+               Exclude="$(ManagedDir)\mscorlib.dll;$(ManagedDir)\netstandard.dll;$(ManagedDir)\System*.dll;$(ManagedDir)\Mono.*.dll;$(ManagedDir)\Microsoft.*.dll"
+               Private="false" />
+    <Reference Include="$(BeatSaberDir)\Libs\*.dll"
+               Exclude="$(BeatSaberDir)\Libs\System*.dll;$(BeatSaberDir)\Libs\Microsoft.*.dll"
+               Private="false" />
+    <Reference Include="BSML" HintPath="$(BeatSaberDir)\Plugins\BSML.dll" Private="false" />
+    <Reference Include="SiraUtil" HintPath="$(BeatSaberDir)\Plugins\SiraUtil.dll" Private="false" />
+    <Reference Include="MultiplayerCore" HintPath="$(BeatSaberDir)\Plugins\MultiplayerCore.dll" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CheckBeatSaberDir" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedDir)\Main.dll')"
+           Text="Beat Saber was not found at '$(BeatSaberDir)'. Build with -p:BeatSaberDir=&quot;path to your Beat Saber folder&quot;." />
+    <Error Condition="!Exists('$(BeatSaberDir)\Plugins\MultiplayerCore.dll')"
+           Text="MultiplayerCore.dll was not found in '$(BeatSaberDir)\Plugins'. Install MultiplayerCore, BSML and SiraUtil with a mod manager first." />
+  </Target>
+
+  <Target Name="CopyPluginToGame" AfterTargets="Build" Condition="'$(CopyToPlugins)' == 'true'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BeatSaberDir)\Plugins" />
+  </Target>
+
+</Project>

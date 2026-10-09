@@ -28,6 +28,20 @@ Settings are under Mod Settings > Voice Chat in the main menu and are saved to `
 | Push-to-talk | Off | Only transmits while the chosen button is held; the Mute button is hidden |
 | Push-to-talk button | Left grip | Left grip, Right grip, X, Y, A, B, Left stick click, Right stick click |
 
+## PC version
+
+`pc/VoiceChat` is a BSIPA plugin for Beat Saber PC 1.40.8 with the same panel and settings. Quest and PC players in the same lobby can hear each other: both send a MultiplayerCore packet named `VoicePacket` containing an int index, an int length, and up to 640 bytes of 16 kHz mono 16-bit PCM.
+
+Requirements: the .NET SDK, and Beat Saber PC 1.40.8 with BSIPA, BSML, SiraUtil and MultiplayerCore installed (the build compiles against the game's own DLLs).
+
+```bash
+dotnet build pc/VoiceChat/VoiceChat.csproj -c Release -p:BeatSaberDir="C:\Program Files (x86)\Steam\steamapps\common\Beat Saber"
+```
+
+Copy `pc/VoiceChat/bin/Release/net472/VoiceChat.dll` into the game's `Plugins` folder, or add `-p:CopyToPlugins=true` to copy it automatically. Settings are under Mod Settings > Voice Chat and are saved to `UserData/VoiceChat.json`. The microphone is the system default recording device.
+
+Cross-play needs everyone on a server that supports MultiplayerCore (for example BeatTogether), with Voice Chat 1.0.0 on both Quest and PC.
+
 ## Host tests (no Quest toolchain)
 
 The packet format, mute state, and jitter buffer are plain C++ and tested on PC:
@@ -46,6 +60,7 @@ cmake -S . -B build/host && cmake --build build/host && ctest --test-dir build/h
 | `src/UI/VoiceMuteButton.*` | In-lobby voice panel (status and mute button) |
 | `src/UI/VoiceSettings.*` | Mod settings menu |
 | `src/Config/VoiceConfig.*` | Saved settings and push-to-talk button mapping |
+| `pc/VoiceChat/` | PC (BSIPA) version, cross-play compatible with Quest |
 | `include/hooking.hpp` | Auto-install hook macros |
 | `mod.template.json`, `qpm.json` | qmod manifest template and dependencies |
 | `site/`, `api/`, `vercel.json` | Download page and version API for Vercel |

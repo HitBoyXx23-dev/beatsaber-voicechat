@@ -1,0 +1,7 @@
+<settings-container>
+  <bool-setting text="Enable voice chat" value="Enabled" apply-on-change="true" bind-value="true" />
+  <bool-setting text="Start muted in lobbies" value="StartMuted" apply-on-change="true" bind-value="true" />
+  <bool-setting text="Push-to-talk" value="PushToTalk" apply-on-change="true" bind-value="true" />
+  <dropdown-list-setting text="Push-to-talk button" value="PushToTalkButton" options="PushToTalkButtons" apply-on-change="true" bind-value="true" />
+  <text text="Push-to-talk: hold the button to talk. Otherwise use the panel in the lobby to mute or unmute." font-size="3" italics="true" word-wrapping="true" />
+</settings-container>
