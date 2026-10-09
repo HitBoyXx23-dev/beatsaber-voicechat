@@ -8,14 +8,20 @@
 #include "bsml/shared/BSML.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Object.hpp"
+#include "UnityEngine/RectTransform.hpp"
+#include "UnityEngine/TextAnchor.hpp"
 #include "UnityEngine/UI/Button.hpp"
+#include "UnityEngine/UI/ContentSizeFitter.hpp"
+#include "UnityEngine/UI/HorizontalLayoutGroup.hpp"
+#include "UnityEngine/UI/LayoutElement.hpp"
 
 namespace {
 
 BSML::FloatingScreen* screen = nullptr;
 UnityEngine::UI::Button* muteButton = nullptr;
 
-const UnityEngine::Vector2 kPanelSize{24.0f, 8.0f};
+const UnityEngine::Vector2 kPanelSize{32.0f, 11.0f};
+const UnityEngine::Vector2 kButtonSize{30.0f, 9.0f};
 const UnityEngine::Vector3 kPanelPosition{-1.7f, 1.1f, 1.6f};
 const UnityEngine::Vector3 kPanelRotation{10.0f, -47.0f, 0.0f};
 
@@ -43,8 +49,31 @@ void VoiceMuteButton::Show() {
         return;
     }
 
-    muteButton = BSML::Lite::CreateUIButton(screen->get_transform(), "", DEFAULT_BUTTONTEMPLATE, {0, 0}, kPanelSize, OnMuteClicked);
+    auto layout = BSML::Lite::CreateHorizontalLayoutGroup(screen->get_transform());
+    layout->set_childAlignment(UnityEngine::TextAnchor::MiddleCenter);
+    layout->set_childControlWidth(true);
+    layout->set_childControlHeight(true);
+    layout->set_childForceExpandWidth(false);
+    layout->set_childForceExpandHeight(false);
+    if (auto fitter = layout->GetComponent<UnityEngine::UI::ContentSizeFitter*>()) {
+        UnityEngine::Object::Destroy(fitter);
+    }
+    auto layoutRect = layout->get_transform().cast<UnityEngine::RectTransform>();
+    layoutRect->set_anchorMin({0.0f, 0.0f});
+    layoutRect->set_anchorMax({1.0f, 1.0f});
+    layoutRect->set_anchoredPosition({0.0f, 0.0f});
+    layoutRect->set_sizeDelta({0.0f, 0.0f});
+
+    muteButton = BSML::Lite::CreateUIButton(layout->get_transform(), "", DEFAULT_BUTTONTEMPLATE, {0, 0}, kButtonSize, OnMuteClicked);
     BSML::Lite::SetButtonTextSize(muteButton, 3.5f);
+    BSML::Lite::ToggleButtonWordWrapping(muteButton, false);
+    if (auto buttonFitter = muteButton->GetComponent<UnityEngine::UI::ContentSizeFitter*>()) {
+        UnityEngine::Object::Destroy(buttonFitter);
+    }
+    auto layoutElement = muteButton->GetComponent<UnityEngine::UI::LayoutElement*>();
+    if (!layoutElement) layoutElement = muteButton->get_gameObject()->AddComponent<UnityEngine::UI::LayoutElement*>();
+    layoutElement->set_preferredWidth(kButtonSize.x);
+    layoutElement->set_preferredHeight(kButtonSize.y);
     Refresh();
 }
 
