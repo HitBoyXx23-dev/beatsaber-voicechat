@@ -14,5 +14,5 @@ VOICECHAT_EXPORT_FUNC void setup(CModInfo* info) {
 VOICECHAT_EXPORT_FUNC void late_load() {
     il2cpp_functions::Init();
     VoiceChat::Hooking::InstallBootstrapHook();
-    INFO("Voice chat late_load complete (gameplay deferred until main menu)");
+    INFO("Voice chat late_load complete");
 }

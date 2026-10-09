@@ -19,24 +19,43 @@
     };                                                                                                        \
     static Auto_Hook_##name_ Auto_Hook_Instance_##name_
 
+static bool gameplayReady = false;
+static MultiplayerCore::Networking::MpPacketSerializer* pendingSerializer = nullptr;
+
 MAKE_HOOK_MATCH(VoiceChat_MainMenu_DidActivate, &GlobalNamespace::MainMenuViewController::DidActivate, void, GlobalNamespace::MainMenuViewController* self, bool firstActivation, bool addedToHierarchy,
     bool screenSystemEnabling) {
     VoiceChat_MainMenu_DidActivate(self, firstActivation, addedToHierarchy, screenSystemEnabling);
     VoiceChat::Hooking::EnsureGameplayReady();
 }
 
-MAKE_HOOK_FIND_CLASS_INSTANCE(VoiceChat_PacketSerializer_Initialize,
-    "MultiplayerCore.Networking", "MpPacketSerializer", "Initialize", void,
-    MultiplayerCore::Networking::MpPacketSerializer* self) {
-    VoiceChat_PacketSerializer_Initialize(self);
-    if (self) VoiceChat::VoiceChatController::get_instance()->Arm(self);
+using SubSerializer = GlobalNamespace::INetworkPacketSubSerializer_1<GlobalNamespace::IConnectedPlayer*>;
+
+static MultiplayerCore::Networking::MpPacketSerializer* AsMpPacketSerializer(SubSerializer* subSerializer) {
+    if (!subSerializer) return nullptr;
+    auto cast = il2cpp_utils::try_cast<MultiplayerCore::Networking::MpPacketSerializer>(subSerializer);
+    return cast.has_value() ? cast.value() : nullptr;
 }
 
-MAKE_HOOK_FIND_CLASS_INSTANCE(VoiceChat_PacketSerializer_Dispose,
-    "MultiplayerCore.Networking", "MpPacketSerializer", "Dispose", void,
-    MultiplayerCore::Networking::MpPacketSerializer* self) {
-    VoiceChat::VoiceChatController::get_instance()->Disarm();
-    VoiceChat_PacketSerializer_Dispose(self);
+MAKE_HOOK_MATCH(VoiceChat_SessionManager_RegisterSerializer,
+    &GlobalNamespace::MultiplayerSessionManager::RegisterSerializer, void,
+    GlobalNamespace::MultiplayerSessionManager* self, GlobalNamespace::MultiplayerSessionManager_MessageType serializerType,
+    SubSerializer* subSerializer) {
+    VoiceChat_SessionManager_RegisterSerializer(self, serializerType, subSerializer);
+    if (auto* serializer = AsMpPacketSerializer(subSerializer)) {
+        pendingSerializer = serializer;
+        if (gameplayReady) VoiceChat::VoiceChatController::get_instance()->Arm(serializer);
+    }
+}
+
+MAKE_HOOK_MATCH(VoiceChat_SessionManager_UnregisterSerializer,
+    &GlobalNamespace::MultiplayerSessionManager::UnregisterSerializer, void,
+    GlobalNamespace::MultiplayerSessionManager* self, GlobalNamespace::MultiplayerSessionManager_MessageType serializerType,
+    SubSerializer* subSerializer) {
+    if (AsMpPacketSerializer(subSerializer)) {
+        pendingSerializer = nullptr;
+        VoiceChat::VoiceChatController::get_instance()->Disarm();
+    }
+    VoiceChat_SessionManager_UnregisterSerializer(self, serializerType, subSerializer);
 }
 
 MAKE_HOOK_MATCH(VoiceChat_SessionManager_LateUpdate, &GlobalNamespace::MultiplayerSessionManager::LateUpdate, void, GlobalNamespace::MultiplayerSessionManager* self) {
@@ -60,8 +79,8 @@ MAKE_HOOK_MATCH(VoiceChat_Lobby_DidDeactivate, &GlobalNamespace::GameServerLobby
     VoiceChat_Lobby_DidDeactivate(self, removedFromHierarchy, screenSystemDisabling);
 }
 
-VOICECHAT_QUEUE_HOOK(VoiceChat_PacketSerializer_Initialize);
-VOICECHAT_QUEUE_HOOK(VoiceChat_PacketSerializer_Dispose);
+VOICECHAT_QUEUE_HOOK(VoiceChat_SessionManager_RegisterSerializer);
+VOICECHAT_QUEUE_HOOK(VoiceChat_SessionManager_UnregisterSerializer);
 VOICECHAT_QUEUE_HOOK(VoiceChat_SessionManager_LateUpdate);
 VOICECHAT_QUEUE_HOOK(VoiceChat_Lobby_DidActivate);
 VOICECHAT_QUEUE_HOOK(VoiceChat_Lobby_DidDeactivate);
@@ -72,14 +91,14 @@ void VoiceChat::Hooking::InstallBootstrapHook() {
     installed = true;
     static constexpr auto logger = Paper::ConstLoggerContext(MOD_ID "_Install_Bootstrap");
     ::Hooking::InstallHook<Hook_VoiceChat_MainMenu_DidActivate>(logger);
-    INFO("Voice chat bootstrap hook installed");
+    InstallHooks();
+    INFO("Voice chat hooks installed");
 }
 
 void VoiceChat::Hooking::EnsureGameplayReady() {
-    static bool ready = false;
-    if (ready) return;
-    ready = true;
+    if (gameplayReady) return;
     custom_types::Register::AutoRegister();
-    InstallHooks();
-    INFO("Voice chat gameplay hooks installed");
+    gameplayReady = true;
+    if (pendingSerializer) VoiceChat::VoiceChatController::get_instance()->Arm(pendingSerializer);
+    INFO("Voice chat gameplay ready");
 }
