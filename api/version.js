@@ -3,7 +3,7 @@
 // Stateless on purpose, so it runs on Vercel without any database.
 const LATEST = {
   gameVersion: '1.40.8',
-  modVersion: '0.1.0',
+  modVersion: '1.0.0',
   qmod: '/downloads/VoiceChat-1.40.8.qmod',
 };
 

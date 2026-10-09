@@ -2,6 +2,7 @@
 #include "Voice/VoicePacket.hpp"
 #include "logging.hpp"
 #include "UI/VoiceMuteButton.hpp"
+#include "Config/VoiceConfig.hpp"
 
 #include <algorithm>
 #include <string_view>
@@ -59,15 +60,17 @@ void VoiceChatController::Disarm() {
 
 void VoiceChatController::StartRuntime() {
     if (!armed_ || runtimeActive_) return;
+    auto& settings = Config::Get();
+    if (!settings.enabled) return;
 
     runtimeActive_ = true;
     uiDelayFrames_ = 90;
     uiShown_ = false;
     micStarted_ = false;
-    {
-        std::lock_guard lock(mutex_);
-        mic_.SetMuted(true);
-    }
+
+    bool startMuted = settings.pushToTalk || settings.startMuted;
+    SetMuted(startMuted);
+    if (settings.pushToTalk || !startMuted) EnsureMicStarted();
     EnsureSpeaker();
     INFO("Voice chat runtime started (lobby)");
 }
@@ -97,6 +100,7 @@ void VoiceChatController::StopRuntime() {
 void VoiceChatController::MainThreadTick() {
     if (!runtimeActive_) return;
     TryShowUi();
+    UpdatePushToTalk();
     PollMicCapture();
     FlushSendQueue();
     FlushPlaybackQueue();
@@ -111,18 +115,52 @@ void VoiceChatController::TryShowUi() {
 }
 
 void VoiceChatController::ToggleMute() {
-    std::lock_guard lock(mutex_);
-    mic_.Toggle();
-    if (!mic_.IsMuted() && !micStarted_) {
-        StartMic();
-        micStarted_ = true;
-    }
-    INFO("Mic muted: {}", mic_.IsMuted());
+    if (!runtimeActive_ || Config::Get().pushToTalk) return;
+    SetMuted(!IsMuted());
+    if (!IsMuted()) EnsureMicStarted();
+    INFO("Mic muted: {}", IsMuted());
 }
 
 bool VoiceChatController::IsMuted() {
     std::lock_guard lock(mutex_);
     return mic_.IsMuted();
+}
+
+void VoiceChatController::SetMuted(bool muted) {
+    std::lock_guard lock(mutex_);
+    mic_.SetMuted(muted);
+    if (muted) pending_.clear();
+}
+
+void VoiceChatController::EnsureMicStarted() {
+    if (micStarted_) return;
+    StartMic();
+    micStarted_ = true;
+}
+
+void VoiceChatController::UpdatePushToTalk() {
+    if (!Config::Get().pushToTalk) return;
+
+    bool held = GlobalNamespace::OVRInput::Get(Config::PttRawButton(), GlobalNamespace::OVRInput_Controller::Touch);
+    if (held == !IsMuted()) return;
+
+    SetMuted(!held);
+    UI::VoiceMuteButton::Refresh();
+}
+
+void VoiceChatController::ApplySettings() {
+    if (!runtimeActive_) return;
+
+    auto& settings = Config::Get();
+    if (!settings.enabled) {
+        StopRuntime();
+        return;
+    }
+    if (settings.pushToTalk) {
+        SetMuted(true);
+        EnsureMicStarted();
+    }
+    UI::VoiceMuteButton::Refresh();
 }
 
 void VoiceChatController::EnsureSpeaker() {

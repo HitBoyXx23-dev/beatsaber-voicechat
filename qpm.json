@@ -6,7 +6,7 @@
   "info": {
     "name": "Voice Chat",
     "id": "voicechat",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "url": "https://github.com/HitBoyXx23-dev/beatsaber-voicechat",
     "additionalData": {
       "overrideSoName": "libvoicechat.so",

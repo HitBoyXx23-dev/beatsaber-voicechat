@@ -36,8 +36,12 @@ public:
 
     void ToggleMute();
     bool IsMuted();
+    void ApplySettings();
 
 private:
+    void SetMuted(bool muted);
+    void EnsureMicStarted();
+    void UpdatePushToTalk();
     void EnsureSpeaker();
     void StartMic();
     void StopMic();

@@ -15,6 +15,19 @@ qpm qmod zip         # packs VoiceChat.qmod from mod.template.json
 
 Install the `.qmod` with [MBF](https://mbf.bsquest.xyz), then also install MultiplayerCore from the same page.
 
+## Using it
+
+In a multiplayer lobby a Voice Chat panel appears to your lower left. It shows `MIC LIVE` (green) or `MIC MUTED` (red) and has a Mute / Unmute button.
+
+Settings are under Mod Settings > Voice Chat in the main menu and are saved to `/sdcard/ModData/com.beatgames.beatsaber/Configs/VoiceChat.json`:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Enable voice chat | On | Turns voice chat off completely (no panel, no mic, no playback) |
+| Start muted in lobbies | On | Joins each lobby muted until you press Unmute |
+| Push-to-talk | Off | Only transmits while the chosen button is held; the Mute button is hidden |
+| Push-to-talk button | Left grip | Left grip, Right grip, X, Y, A, B, Left stick click, Right stick click |
+
 ## Host tests (no Quest toolchain)
 
 The packet format, mute state, and jitter buffer are plain C++ and tested on PC:
@@ -30,7 +43,9 @@ cmake -S . -B build/host && cmake --build build/host && ctest --test-dir build/h
 | `src/voice_core.*`, `src/jitter_buffer.*` | Platform-independent logic (tested) |
 | `src/Voice/` | Voice packet and the controller (mic capture, send, receive, playback) |
 | `src/Hooks/VoiceHooks.cpp` | Attaches the controller when a lobby session starts |
-| `src/UI/VoiceMuteButton.*` | In-lobby mute button |
+| `src/UI/VoiceMuteButton.*` | In-lobby voice panel (status and mute button) |
+| `src/UI/VoiceSettings.*` | Mod settings menu |
+| `src/Config/VoiceConfig.*` | Saved settings and push-to-talk button mapping |
 | `include/hooking.hpp` | Auto-install hook macros |
 | `mod.template.json`, `qpm.json` | qmod manifest template and dependencies |
 | `site/`, `api/`, `vercel.json` | Download page and version API for Vercel |
@@ -41,7 +56,7 @@ Import the repo in Vercel with no build command. Put the built `.qmod` in `site/
 
 ## Status
 
-Not yet verified on a headset. Known risks: Unity audio calls from the capture thread, per-chunk playback quality, and a few API signatures (`BSML::Lite::CreateUIButton`, `NetDataWriter::Put`) that depend on the exact dependency versions.
+Boots on Quest with Beat Saber 1.40.8. In-lobby voice quality has not been fully verified yet; playback is per-chunk and may sound choppy.
 
 ## Privacy
 
