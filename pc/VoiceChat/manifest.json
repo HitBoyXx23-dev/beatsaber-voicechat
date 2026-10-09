@@ -3,7 +3,7 @@
   "id": "VoiceChat",
   "name": "Voice Chat",
   "author": "beatsaber-voicechat",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Voice chat for multiplayer lobbies. Works with Quest players running Voice Chat 1.0.0.",
   "gameVersion": "1.40.8",
   "dependsOn": {

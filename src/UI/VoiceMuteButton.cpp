@@ -22,8 +22,8 @@ UnityEngine::UI::Button* muteButton = nullptr;
 
 const UnityEngine::Vector2 kPanelSize{32.0f, 11.0f};
 const UnityEngine::Vector2 kButtonSize{30.0f, 9.0f};
-const UnityEngine::Vector3 kPanelPosition{-1.7f, 1.1f, 1.6f};
-const UnityEngine::Vector3 kPanelRotation{10.0f, -47.0f, 0.0f};
+const UnityEngine::Vector3 kPanelPosition{-1.6f, 2.4f, 2.4f};
+const UnityEngine::Vector3 kPanelRotation{-12.0f, -34.0f, 0.0f};
 
 constexpr std::string_view kLiveLabel = "<color=#59FF73>MIC ON</color>";
 constexpr std::string_view kMutedLabel = "<color=#FF5959>MIC OFF</color>";

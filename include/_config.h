@@ -4,7 +4,7 @@
 #define MOD_ID "voicechat"
 #endif
 #ifndef VERSION
-#define VERSION "1.0.3"
+#define VERSION "1.0.4"
 #endif
 #ifndef VERSION_LONG
 #define VERSION_LONG 0

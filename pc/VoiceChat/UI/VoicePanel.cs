@@ -15,9 +15,9 @@ namespace VoiceChat.UI
     internal class VoicePanel : IInitializable, IDisposable, INotifyPropertyChanged
     {
         private const string ResourcePath = "VoiceChat.UI.VoicePanel.bsml";
-        private static readonly Vector2 PanelSize = new Vector2(24f, 8f);
-        private static readonly Vector3 PanelPosition = new Vector3(-1.7f, 1.1f, 1.6f);
-        private static readonly Vector3 PanelRotation = new Vector3(10f, -47f, 0f);
+        private static readonly Vector2 PanelSize = new Vector2(32f, 11f);
+        private static readonly Vector3 PanelPosition = new Vector3(-1.6f, 2.4f, 2.4f);
+        private static readonly Vector3 PanelRotation = new Vector3(-12f, -34f, 0f);
 
         private readonly VoiceChatManager _voiceChatManager;
         private readonly BSMLParser _bsmlParser;
