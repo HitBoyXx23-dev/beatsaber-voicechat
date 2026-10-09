@@ -15,9 +15,9 @@ namespace VoiceChat.UI
     internal class VoicePanel : IInitializable, IDisposable, INotifyPropertyChanged
     {
         private const string ResourcePath = "VoiceChat.UI.VoicePanel.bsml";
-        private static readonly Vector2 PanelSize = new Vector2(44f, 26f);
-        private static readonly Vector3 PanelPosition = new Vector3(-1.0f, 0.85f, 1.9f);
-        private static readonly Vector3 PanelRotation = new Vector3(30f, -25f, 0f);
+        private static readonly Vector2 PanelSize = new Vector2(24f, 8f);
+        private static readonly Vector3 PanelPosition = new Vector3(-1.7f, 1.1f, 1.6f);
+        private static readonly Vector3 PanelRotation = new Vector3(10f, -47f, 0f);
 
         private readonly VoiceChatManager _voiceChatManager;
         private readonly BSMLParser _bsmlParser;
@@ -31,29 +31,19 @@ namespace VoiceChat.UI
             _bsmlParser = bsmlParser;
         }
 
-        [UIValue("StatusText")]
-        public string StatusText => _voiceChatManager.IsMuted ? "MIC MUTED" : "MIC LIVE";
-
-        [UIValue("StatusColor")]
-        public string StatusColor => _voiceChatManager.IsMuted ? "#FF5959" : "#59FF73";
-
-        [UIValue("HintText")]
-        public string HintText
+        [UIValue("ButtonText")]
+        public string ButtonText
         {
             get
             {
+                string label = _voiceChatManager.IsMuted ? "<color=#FF5959>MIC OFF</color>" : "<color=#59FF73>MIC ON</color>";
                 var config = PluginConfig.Instance;
-                if (config.PushToTalk)
-                    return $"Hold {config.PushToTalkButton} to talk";
-                return _voiceChatManager.IsMuted ? "Others cannot hear you" : "Others can hear you";
+                return config.PushToTalk ? $"{label} (hold {config.PushToTalkButton})" : label;
             }
         }
 
-        [UIValue("ButtonText")]
-        public string ButtonText => _voiceChatManager.IsMuted ? "Unmute" : "Mute";
-
-        [UIValue("ShowButton")]
-        public bool ShowButton => !PluginConfig.Instance.PushToTalk;
+        [UIValue("ButtonInteractable")]
+        public bool ButtonInteractable => !PluginConfig.Instance.PushToTalk;
 
         public void Initialize()
         {
@@ -83,11 +73,8 @@ namespace VoiceChat.UI
             if (_screen == null)
                 CreateScreen();
 
-            NotifyPropertyChanged(nameof(StatusText));
-            NotifyPropertyChanged(nameof(StatusColor));
-            NotifyPropertyChanged(nameof(HintText));
             NotifyPropertyChanged(nameof(ButtonText));
-            NotifyPropertyChanged(nameof(ShowButton));
+            NotifyPropertyChanged(nameof(ButtonInteractable));
         }
 
         private void CreateScreen()

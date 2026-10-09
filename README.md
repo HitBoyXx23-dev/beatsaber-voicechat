@@ -17,9 +17,9 @@ Install the `.qmod` with [MBF](https://mbf.bsquest.xyz), then also install Multi
 
 ## Using it
 
-In a multiplayer lobby a Voice Chat panel appears to your lower left. It shows `MIC LIVE` (green) or `MIC MUTED` (red) and has a Mute / Unmute button.
+In a multiplayer lobby a small button appears off to your left. It shows `MIC ON` (green) or `MIC OFF` (red); press it to toggle your mic.
 
-Settings are under Mod Settings > Voice Chat in the main menu and are saved to `/sdcard/ModData/com.beatgames.beatsaber/Configs/VoiceChat.json`:
+Open the settings with the Voice Chat button in the main menu's mod list (also under Settings > Mod Settings > Voice Chat). They are saved to `/sdcard/ModData/com.beatgames.beatsaber/Configs/VoiceChat.json`:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ cmake -S . -B build/host && cmake --build build/host && ctest --test-dir build/h
 | `src/voice_core.*`, `src/jitter_buffer.*` | Platform-independent logic (tested) |
 | `src/Voice/` | Voice packet and the controller (mic capture, send, receive, playback) |
 | `src/Hooks/VoiceHooks.cpp` | Attaches the controller when a lobby session starts |
-| `src/UI/VoiceMuteButton.*` | In-lobby voice panel (status and mute button) |
+| `src/UI/VoiceMuteButton.*` | In-lobby mic toggle button |
 | `src/UI/VoiceSettings.*` | Mod settings menu |
 | `src/Config/VoiceConfig.*` | Saved settings and push-to-talk button mapping |
 | `pc/VoiceChat/` | PC (BSIPA) version, cross-play compatible with Quest |

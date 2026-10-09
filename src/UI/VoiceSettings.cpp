@@ -17,6 +17,7 @@ void SaveAndApply() {
 
 void VoiceSettings::Register() {
     BSML::Register::RegisterSettingsMenu("Voice Chat", &VoiceSettings::DidActivate, false);
+    BSML::Register::RegisterMainMenuViewControllerMethod("Voice Chat", "Voice Chat", "Voice chat settings", &VoiceSettings::DidActivate);
 }
 
 void VoiceSettings::DidActivate(HMUI::ViewController* self, bool firstActivation, bool, bool) {
