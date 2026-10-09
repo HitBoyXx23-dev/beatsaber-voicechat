@@ -1,6 +1,8 @@
 #include "hooking.hpp"
 #include "logging.hpp"
 #include "Voice/VoiceChatController.hpp"
+#include "Config/VoiceConfig.hpp"
+#include "UI/VoiceSettings.hpp"
 
 #include "beatsaber-hook/shared/utils/hooking.hpp"
 #include "multiplayer-core/shared/Networking/MpPacketSerializer.hpp"
@@ -97,6 +99,8 @@ void VoiceChat::Hooking::InstallBootstrapHook() {
 
 void VoiceChat::Hooking::EnsureGameplayReady() {
     if (gameplayReady) return;
+    VoiceChat::Config::Load();
+    VoiceChat::UI::VoiceSettings::Register();
     custom_types::Register::AutoRegister();
     gameplayReady = true;
     if (pendingSerializer) VoiceChat::VoiceChatController::get_instance()->Arm(pendingSerializer);
