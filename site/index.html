@@ -34,7 +34,8 @@
   <p class="muted">Talk with other players in multiplayer lobbies. Players talk directly through the game's own multiplayer connection, so there is no server to run or sign up for.</p>
 
   <div class="row">
-    <a class="btn" href="/downloads/VoiceChat-1.40.8.qmod" download>Download .qmod (1.40.8)</a>
+    <a class="btn" href="/downloads/VoiceChat-1.40.8.qmod" download>Download for Quest (.qmod)</a>
+    <a class="btn" href="/downloads/VoiceChat-PC-1.40.8.zip" download>Download for PC (.zip)</a>
     <a class="btn secondary" href="#install">How to install</a>
   </div>
 
@@ -42,19 +43,26 @@
   <div class="card">
     <ul>
       <li><strong>Voice in multiplayer lobbies</strong>, with anyone else who has the mod.</li>
-      <li><strong>Mic mute button</strong> in the lobby. Tap it to mute or unmute yourself. Your state is kept between sessions.</li>
-      <li><strong>No server needed.</strong> Voice is sent as packets over the game's multiplayer connection.</li>
-      <li><strong>Works on any multiplayer server</strong>, as long as the other players have the mod.</li>
+      <li><strong>Quest and PC cross-play.</strong> Quest and PC players in the same lobby can hear each other.</li>
+      <li><strong>Mic button</strong> off to your left in the lobby, showing MIC ON or MIC OFF. Press it to toggle.</li>
+      <li><strong>Settings:</strong> turn voice chat off, start muted, or use push-to-talk on a controller button.</li>
+      <li><strong>No voice server needed.</strong> Voice is sent as packets over the game's multiplayer connection (needs a MultiplayerCore server such as BeatTogether).</li>
     </ul>
   </div>
 
   <h2 id="install">Install</h2>
   <div class="card">
+    <p><strong>Quest</strong></p>
     <ol>
-      <li>Install <strong>Beat Saber 1.40.8</strong> and <strong>BSIPA/QuestPatcher</strong> (or your usual modding tool).</li>
-      <li>Install the dependencies the mod needs: <code>beatsaber-hook</code>, <code>bsml</code>, and <code>multiplayercore</code>.</li>
-      <li>Download the <code>.qmod</code> file above and open it with QuestPatcher, or copy it into your mods folder.</li>
-      <li>Start Beat Saber, join a multiplayer lobby, and check the mic button next to your name.</li>
+      <li>Mod Beat Saber 1.40.8 with <a href="https://mbf.bsquest.xyz">MBF</a>.</li>
+      <li>Upload the <code>.qmod</code> above in MBF. It installs MultiplayerCore, BSML and the other dependencies automatically.</li>
+      <li>Join a multiplayer lobby and look to your left for the mic button. Settings are in the main menu's Voice Chat button.</li>
+    </ol>
+    <p><strong>PC</strong></p>
+    <ol>
+      <li>Mod Beat Saber 1.40.8 and install <code>BSML</code>, <code>SiraUtil</code> and <code>MultiplayerCore</code> with your mod manager.</li>
+      <li>Extract the <code>.zip</code> above into your Beat Saber folder so <code>VoiceChat.dll</code> ends up in <code>Plugins</code>.</li>
+      <li>Join a multiplayer lobby and look to your left for the mic button. Settings are under Mod Settings &gt; Voice Chat.</li>
     </ol>
   </div>
 

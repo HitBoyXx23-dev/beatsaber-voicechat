@@ -32,13 +32,15 @@ Open the settings with the Voice Chat button in the main menu's mod list (also u
 
 `pc/VoiceChat` is a BSIPA plugin for Beat Saber PC 1.40.8 with the same panel and settings. Quest and PC players in the same lobby can hear each other: both send a MultiplayerCore packet named `VoicePacket` containing an int index, an int length, and up to 640 bytes of 16 kHz mono 16-bit PCM.
 
-Requirements: the .NET SDK, and Beat Saber PC 1.40.8 with BSIPA, BSML, SiraUtil and MultiplayerCore installed (the build compiles against the game's own DLLs).
+Build it with the .NET SDK (Beat Saber does not need to be installed):
 
-```bash
-dotnet build pc/VoiceChat/VoiceChat.csproj -c Release -p:BeatSaberDir="C:\Program Files (x86)\Steam\steamapps\common\Beat Saber"
+```powershell
+powershell -ExecutionPolicy Bypass -File pc/build.ps1
 ```
 
-Copy `pc/VoiceChat/bin/Release/net472/VoiceChat.dll` into the game's `Plugins` folder, or add `-p:CopyToPlugins=true` to copy it automatically. Settings are under Mod Settings > Voice Chat and are saved to `UserData/VoiceChat.json`. The microphone is the system default recording device.
+The script downloads stripped Beat Saber 1.40.8 reference assemblies from [beat-forge/beatsaber-stripped](https://github.com/beat-forge/beatsaber-stripped) plus the BSML 1.12.5, SiraUtil 3.2.1 and MultiplayerCore 1.6.2 releases into `pc/refs`, builds `VoiceChat.dll`, and packs `site/downloads/VoiceChat-PC-1.40.8.zip`. To build against a real install instead, pass `-BeatSaberDir "C:\path\to\Beat Saber"`.
+
+To install, extract the zip into the Beat Saber folder so `VoiceChat.dll` lands in `Plugins`. BSML, SiraUtil and MultiplayerCore must be installed. Settings are under Mod Settings > Voice Chat and are saved to `UserData/VoiceChat.json`. The microphone is the system default recording device.
 
 Cross-play needs everyone on a server that supports MultiplayerCore (for example BeatTogether), with Voice Chat 1.0.0 on both Quest and PC.
 
@@ -61,6 +63,7 @@ cmake -S . -B build/host && cmake --build build/host && ctest --test-dir build/h
 | `src/UI/VoiceSettings.*` | Mod settings menu |
 | `src/Config/VoiceConfig.*` | Saved settings and push-to-talk button mapping |
 | `pc/VoiceChat/` | PC (BSIPA) version, cross-play compatible with Quest |
+| `pc/build.ps1` | Builds and packs the PC version without the game installed |
 | `include/hooking.hpp` | Auto-install hook macros |
 | `mod.template.json`, `qpm.json` | qmod manifest template and dependencies |
 | `site/`, `api/`, `vercel.json` | Download page and version API for Vercel |
